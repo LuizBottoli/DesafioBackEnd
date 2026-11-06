@@ -1,14 +1,9 @@
-const Database = require('better-sqlite3');
+import { Sequelize, DataTypes } from 'sequelize';
 
-const db = new Database('livros.db');
+export const sequelize = new Sequelize({ dialect: 'sqlite', storage: 'livros.db', logging: false });
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS livros (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    titulo TEXT NOT NULL,
-    autor TEXT NOT NULL,
-    ano INTEGER
-  )
-`);
-
-module.exports = db;
+export const Livro = sequelize.define('Livro', {
+  titulo: { type: DataTypes.STRING, allowNull: false },
+  autor: { type: DataTypes.STRING, allowNull: false },
+  ano: DataTypes.INTEGER,
+}, { tableName: 'livros', timestamps: false });

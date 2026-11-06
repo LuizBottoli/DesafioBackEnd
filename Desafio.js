@@ -1,49 +1,40 @@
-const express = require('express');
-const db = require('./Banco');
+import express from 'express';
+import { Livro } from './Banco.js';
 
 const router = express.Router();
 
-// get
-router.get('/', (req, res) => {
-  res.json(db.prepare('SELECT * FROM livros').all());
+//faz um get para listar todos os livros
+router.get('/', async (req, res) => {
+  res.json(await Livro.findAll());
 });
 
-// get pelo id
-router.get('/:id', (req, res) => {
-  const livro = db.prepare('SELECT * FROM livros WHERE id = ?').get(req.params.id);
+//busca somente um livro pelo id, se nao encontrar retorna 404
+router.get('/:id', async (req, res) => {
+  const livro = await Livro.findByPk(req.params.id);
   if (!livro) return res.status(404).json({ erro: 'Livro não encontrado' });
   res.json(livro);
 });
 
-// post
-router.post('/', (req, res) => {
+//cria um novo livro, se nao passar titulo ou autor retorna 400
+router.post('/', async (req, res) => {
   const { titulo, autor, ano } = req.body;
   if (!titulo || !autor) return res.status(400).json({ erro: 'Título e autor são obrigatórios' });
-
-  const { lastInsertRowid } = db
-    .prepare('INSERT INTO livros (titulo, autor, ano) VALUES (?, ?, ?)')
-    .run(titulo, autor, ano);
-
-  res.status(201).json({ id: lastInsertRowid, titulo, autor, ano });
+  res.status(201).json(await Livro.create({ titulo, autor, ano }));
 });
 
-// delete pelo id
-router.delete('/:id', (req, res) => {
-  const { changes } = db.prepare('DELETE FROM livros WHERE id = ?').run(req.params.id);
-  if (!changes) return res.status(404).json({ erro: 'Livro não encontrado' });
+//apaga livro pelo id o await guarda o resultado , se nao encontrar retorna 404
+router.delete('/:id', async (req, res) => {
+  const removidos = await Livro.destroy({ where: { id: req.params.id } });
+  if (!removidos) return res.status(404).json({ erro: 'Livro não encontrado' });
   res.status(204).send();
 });
 
-// patch pelo id
-router.patch('/:id', (req, res) => {
-  const livro = db.prepare('SELECT * FROM livros WHERE id = ?').get(req.params.id);
+//atualiza um livro, se nao encontrar retorna 404
+router.patch('/:id', async (req, res) => {
+  const livro = await Livro.findByPk(req.params.id);
   if (!livro) return res.status(404).json({ erro: 'Livro não encontrado' });
-
-  const { titulo, autor, ano } = { ...livro, ...req.body };
-  db.prepare('UPDATE livros SET titulo = ?, autor = ?, ano = ? WHERE id = ?')
-    .run(titulo, autor, ano, livro.id);
-
-  res.json({ id: livro.id, titulo, autor, ano });
+  await livro.update(req.body);
+  res.json(livro);
 });
 
-module.exports = router;
+export default router;
